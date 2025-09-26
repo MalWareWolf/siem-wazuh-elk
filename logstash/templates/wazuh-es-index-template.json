@@ -1,3 +1,14 @@
 {
-  "index_patterns": ["wazuh-alerts-*"]
+  "index_patterns": ["wazuh-alerts-*"],
+  "template": {
+    "settings": {
+      "index": {
+        "mapping": {
+          "total_fields": {
+            "limit": 10000
+          }
+        }
+      }
+    }
+  }
 }

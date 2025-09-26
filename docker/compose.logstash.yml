@@ -1,0 +1,25 @@
+version: "3.8"
+
+name: logstash
+
+services:
+  logstash:
+    image: docker.elastic.co/logstash/logstash:${ELASTIC_VERSION}
+    container_name: logstash
+    restart: unless-stopped
+    environment:
+      - xpack.monitoring.enabled=false
+      - LOGSTASH_KEYSTORE_PASS=${LOGSTASH_KEYSTORE_PASS}
+    ports:
+      - "${LOGSTASH_PORT}:5044"
+    volumes:
+      - ./logstash/pipelines.d:/usr/share/logstash/pipeline:ro
+      - ./logstash/templates:/usr/share/logstash/templates:ro
+      - ./logstash/keystore.env:/run/secrets/keystore.env:ro
+    command: ["bash","-lc","/usr/local/bin/docker-logstash-entrypoint.sh || bin/logstash -f /usr/share/logstash/pipeline"]
+    networks:
+      - ${SIEM_NET}
+
+networks:
+  ${SIEM_NET}:
+    external: true

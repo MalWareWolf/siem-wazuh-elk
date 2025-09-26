@@ -1,2 +1,9 @@
 ---
-# Ansible playbook placeholder
+- hosts: siem
+  become: true
+  roles:
+    - role: common
+    - role: docker
+    - role: wazuh_stack
+    - role: elastic_stack
+    - role: logstash_bridge

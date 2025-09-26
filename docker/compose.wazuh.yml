@@ -1,0 +1,61 @@
+version: "3.8"
+
+name: wazuh
+
+networks:
+  ${SIEM_NET}:
+    external: false
+    name: ${SIEM_NET}
+    ipam:
+      config:
+        - subnet: ${SIEM_SUBNET}
+
+volumes:
+  wazuh-indexer-data: {}
+  wazuh-manager-data: {}
+
+services:
+  wazuh-indexer:
+    image: wazuh/wazuh-indexer:${WAZUH_VERSION}
+    container_name: wazuh-indexer
+    restart: unless-stopped
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile: { soft: 65536, hard: 65536 }
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+    ports:
+      - "${WAZUH_INDEXER_HTTP}:9200"
+    volumes:
+      - wazuh-indexer-data:/var/lib/wazuh-indexer
+      - ${WAZUH_CERTS}:/usr/share/wazuh-indexer/certs:ro
+    networks:
+      - ${SIEM_NET}
+
+  wazuh-manager:
+    image: wazuh/wazuh-manager:${WAZUH_VERSION}
+    container_name: wazuh-manager
+    restart: unless-stopped
+    ports:
+      - "1514:1514/udp"
+      - "1515:1515"
+      - "55000:${WAZUH_MANAGER_API}"
+    environment:
+      - WAZUH_API_URL=https://wazuh-manager:${WAZUH_MANAGER_API}
+    volumes:
+      - wazuh-manager-data:/var/ossec/data
+    networks:
+      - ${SIEM_NET}
+
+  wazuh-dashboard:
+    image: wazuh/wazuh-dashboard:${WAZUH_VERSION}
+    container_name: wazuh-dashboard
+    restart: unless-stopped
+    depends_on: [wazuh-indexer, wazuh-manager]
+    ports:
+      - "${WAZUH_EXTERNAL_PORT}:5601"
+    environment:
+      - OPENSEARCH_HOSTS=["https://wazuh-indexer:9200"]
+    networks:
+      - ${SIEM_NET}
